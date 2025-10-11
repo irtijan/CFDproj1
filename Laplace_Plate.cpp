@@ -1,6 +1,7 @@
 #include <vector>   // Header with vector fucntions used for array creation
 #include <cmath>    // Header with math functions used for trig calculatons
 #include <fstream>  // Header with output fucntions used for CSV creation
+#include <print>    
 
 int main() {
 
@@ -16,7 +17,7 @@ int main() {
 
     double T_btot = 0.0;  // Sum of boundary temperature points
     
-    double diff = 0.0;    // Difference value at point between n and n+1
+    double diff = 0.0;    // Difference of temperature at point between n and n+1
 
     for (int i = 0; i < s; i++) {
             T_prev[0][i] = 0.0;
@@ -38,7 +39,7 @@ int main() {
 
     T = T_prev; // Carrying over initial and boundary conditions to n+1 array
         
-    while (l_inf_tmp > 1e-5) {
+    while (l_inf_tmp > 1e-12) {
         l_inf_tmp = 0.0;
         for (int row = 1; row < s - 1; row++) {
             for (int col = 1; col < s - 1; col++) {
@@ -75,6 +76,51 @@ int main() {
     }
 
     output_file2.close();  // Closes output file
+
+    std::vector<std::vector<double>> Texact(s, std::vector<double>(s, 0.0));  // Temperature array Texact
+
+    double l_inf2 = 0.0;  // Error between exact and numerical solution
+    double diff2 = 0.0;   // Difference of temperature at point between exact and numerical solution
+    for (int row = 0; row < s; row++) {
+        double y = double(row) / (s-1);
+        for (int col = 0; col < s; col++) {
+            double x = double(col) / (s-1);
+            Texact[row][col] = (std::sinh(M_PI * y) * std::sin(M_PI * x)
+                         + std::sinh(M_PI * x) * std::sin(M_PI * y))
+                         / std::sinh(M_PI);
+            diff2 = std::abs(Texact[row][col] - T[row][col]);
+            if (diff2 > l_inf2) {
+                l_inf2 = diff2;
+            }
+        }
+    // Loop that that calculates exact T and finds error between numerical solution
+    }
+
+    std::ofstream output_file3("Texact.csv");  // Creates CSV output file for exact temperature array
+    for (int i = 0; i < s; i++) {
+        for (int j = 0; j < s; j++) {
+            output_file3 << Texact[i][j];
+            if (j != Texact[i].size() - 1)
+                output_file3 << ",";  // separate columns by commas
+        }
+        output_file3 << "\n"; // new line for each row
+        // Loop thats transfers exact temperature array to CSV
+    }
+
+    output_file3.close();  // Closes output file
+
+    std::print("L_inf2 = {}\n", l_inf2);     // Prints the error for the step size
+    std::vector<int> step = {4, 8, 16, 32};  // Mesh size vector
+    std::vector<double> error = {0.04980540832105074, 0.010253525465794, 0.0022759243329250056, 0.0005333793433820455};
+    // error vector
+
+    std::ofstream output_file4("error.csv");  // Creates CSV output file for mesh size vs error
+    for (int i = 0; i < step.size(); i++) {
+        std::println(output_file4, "{},{}", step[i], error[i]);
+        // Loop thats transfers mesh size vs error to CSV
+    }
+
+    output_file4.close();  // Closes output file
 
     return 0;  // Ends program
 }
